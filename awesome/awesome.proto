@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package awesome;
+
+service Awesome {
+  rpc Echo (EchoRequest) returns (EchoResponse) {}
+}
+
+message EchoRequest {
+  string ping = 1;
+}
+
+message EchoResponse {
+  string pong = 1;
+}
