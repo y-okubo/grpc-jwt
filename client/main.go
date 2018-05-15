@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/y-okubo/grpc-jwt/awesome"
+	"github.com/y-okubo/grpc-jwt/user"
 	"google.golang.org/grpc/metadata"
 
 	"google.golang.org/grpc"
@@ -29,6 +30,9 @@ func main() {
 
 	// create client and call
 	c := awesome.NewAwesomeClient(conn)
+
+	// Create JWT
+	token = user.Authenticate("name", "pass")
 
 	// create context with JWT
 	md := metadata.Pairs("Authorization", *token)

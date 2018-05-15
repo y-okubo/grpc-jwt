@@ -6,6 +6,9 @@ import (
 	"net"
 	"os"
 
+	"github.com/y-okubo/grpc-jwt/user"
+
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/y-okubo/grpc-jwt/awesome"
 	"golang.org/x/net/context"
 
@@ -59,9 +62,34 @@ func unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServ
 
 func authorize(ctx context.Context) error {
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		token := md["authorization"]
-		log.Printf("token: %v", token[0])
+		tokenstr := md["authorization"][0]
+		log.Printf("token string: %v\n", tokenstr)
+
+		// With the Parse method, claims is obtained as a map.
+		token, err := jwt.Parse(tokenstr, func(token *jwt.Token) (interface{}, error) {
+			return []byte(user.PrivateKey), nil
+		})
+		if err != nil {
+			log.Println(err)
+			return status.Error(codes.Unauthenticated, "")
+		}
+
+		log.Println(token.Claims, err)
+
+		// Convert claims directly to structure
+		u := user.User{}
+		token, err = jwt.ParseWithClaims(tokenstr, &u, func(token *jwt.Token) (interface{}, error) {
+			return []byte(user.PrivateKey), nil
+		})
+		if err != nil {
+			log.Println(err)
+			return status.Error(codes.Unauthenticated, "")
+		}
+
+		log.Println(token.Valid, u, err)
+
 		return nil
 	}
+
 	return status.Error(codes.Internal, "")
 }
