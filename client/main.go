@@ -2,12 +2,17 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 
 	"github.com/y-okubo/grpc-jwt/awesome"
 	"github.com/y-okubo/grpc-jwt/user"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
 	"google.golang.org/grpc"
@@ -24,7 +29,17 @@ func main() {
 	flag.Usage = fs.Usage
 	fs.Parse(os.Args[1:])
 
-	conn, err := grpc.Dial(*addr, grpc.WithInsecure())
+	// Create the client TLS credentials
+	var cert = "server.crt"
+	creds, err := NewClientTLSFromFileSkipVerify(cert, "")
+	if err != nil {
+		log.Println(err)
+	}
+
+	conn, err := grpc.Dial(
+		*addr,
+		grpc.WithTransportCredentials(creds),
+	)
 	if err != nil {
 		log.Println(err)
 	}
@@ -47,4 +62,20 @@ func main() {
 	}
 
 	log.Printf("Result: %v\n", res.Pong)
+}
+
+func NewClientTLSFromFileSkipVerify(certFile, serverNameOverride string) (credentials.TransportCredentials, error) {
+	b, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return nil, err
+	}
+	cp := x509.NewCertPool()
+	if !cp.AppendCertsFromPEM(b) {
+		return nil, fmt.Errorf("credentials: failed to append certificates")
+	}
+	return credentials.NewTLS(&tls.Config{
+		ServerName:         serverNameOverride,
+		RootCAs:            cp,
+		InsecureSkipVerify: true,
+	}), nil
 }

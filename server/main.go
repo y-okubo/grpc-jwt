@@ -15,6 +15,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -35,8 +36,21 @@ func main() {
 		return
 	}
 
+	var (
+		crt = "server.crt"
+		key = "server.key"
+	)
+
+	// Create the TLS credentials
+	creds, err := credentials.NewServerTLSFromFile(crt, key)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
 	// Register stream and unary interceptor.
 	s := grpc.NewServer(
+		grpc.Creds(creds),
 		grpc.StreamInterceptor(streamInterceptor),
 		grpc.UnaryInterceptor(unaryInterceptor),
 	)
