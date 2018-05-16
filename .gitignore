@@ -12,3 +12,5 @@
 *.out
 
 vendor
+client/client
+server/server
