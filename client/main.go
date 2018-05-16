@@ -18,7 +18,7 @@ func main() {
 
 	fs := flag.NewFlagSet("", flag.ExitOnError)
 	var (
-		addr  = fs.String("grpc.addr", ":8002", "Address for gRPC server")
+		addr  = fs.String("grpc.addr", ":7830", "Address for gRPC server")
 		token = fs.String("grpc.token", "test", "JWT used to gRPC calls")
 	)
 	flag.Usage = fs.Usage

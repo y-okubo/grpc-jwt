@@ -1,12 +1,12 @@
 package user
 
 import (
-	"io/ioutil"
+	"context"
 	"log"
-	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
-	uuid "github.com/satori/go.uuid"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/y-okubo/grpc-jwt/auth"
+	"google.golang.org/grpc"
 )
 
 // PrivateKey uses JWT signing
@@ -21,37 +21,58 @@ type User struct {
 
 // Authenticate creates JWT string.
 func Authenticate(u, p string) *string {
-	// User information can be included in token.
-	c := User{
-		Account:  "y-okubo",
-		FullName: "Yuki Okubo",
-	}
+	return authenticateRuby()
 
-	c.Id = uuid.NewV4().String()
-	c.IssuedAt = time.Now().UTC().Unix()
-	c.NotBefore = time.Now().UTC().Unix()
-	c.ExpiresAt = time.Now().UTC().Unix()
-	c.Issuer = "Y.O"
-	c.Audience = "Y.O"
-	c.Subject = "AccessToken"
+	// // User information can be included in token.
+	// c := User{
+	// 	Account:  "y-okubo",
+	// 	FullName: "Yuki Okubo",
+	// }
 
-	token := jwt.NewWithClaims(jwt.SigningMethodRS512, &c)
+	// c.Id = uuid.NewV4().String()
+	// c.IssuedAt = time.Now().UTC().Unix()
+	// c.NotBefore = time.Now().UTC().Unix()
+	// c.ExpiresAt = time.Now().UTC().Unix()
+	// c.Issuer = "Y.O"
+	// c.Audience = "Y.O"
+	// c.Subject = "AccessToken"
 
-	bin, err := ioutil.ReadFile("rsa")
+	// token := jwt.NewWithClaims(jwt.SigningMethodRS512, &c)
+
+	// bin, err := ioutil.ReadFile("rsa")
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// key, err := jwt.ParseRSAPrivateKeyFromPEM(bin)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// // Convert JSON to a string (JWT) using a secret key.
+	// str, err := token.SignedString(key)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// return &str
+}
+
+func authenticateRuby() *string {
+	conn, err := grpc.Dial(":7831", grpc.WithInsecure())
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return nil
 	}
+	defer conn.Close()
 
-	key, err := jwt.ParseRSAPrivateKeyFromPEM(bin)
+	c := auth.NewAuthenticatorClient(conn)
+
+	resp, err := c.DoAuth(context.Background(), &auth.AuthRequest{})
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return nil
 	}
 
-	// Convert JSON to a string (JWT) using a secret key.
-	str, err := token.SignedString(key)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	return &str
+	return &resp.Token
 }

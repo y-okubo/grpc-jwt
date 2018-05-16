@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package auth;
+
+service Authenticator {
+  rpc DoAuth (AuthRequest) returns (AuthResponse) {}
+}
+
+message AuthRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message AuthResponse {
+  string token = 1;
+}

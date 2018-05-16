@@ -24,7 +24,7 @@ func main() {
 
 	fs := flag.NewFlagSet("", flag.ExitOnError)
 	var (
-		addr = fs.String("grpc.addr", ":8002", "Address for gRPC server")
+		addr = fs.String("grpc.addr", ":7830", "Address for gRPC server")
 	)
 	flag.Usage = fs.Usage
 	fs.Parse(os.Args[1:])
@@ -66,7 +66,6 @@ func unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServ
 func authorize(ctx context.Context) error {
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		tokenstr := md["authorization"][0]
-		log.Printf("token string: %v\n", tokenstr)
 
 		bin, err := ioutil.ReadFile("rsa.pub")
 		if err != nil {
@@ -80,20 +79,12 @@ func authorize(ctx context.Context) error {
 			return status.Error(codes.Unauthenticated, "")
 		}
 
-		// With the Parse method, claims is obtained as a map.
-		token, err := jwt.Parse(tokenstr, func(token *jwt.Token) (interface{}, error) {
-			return key, nil
-		})
-		if err != nil {
-			log.Println(err)
-			return status.Error(codes.Unauthenticated, "")
-		}
-
-		log.Println(token.Claims, err)
+		// Expired
+		// time.Sleep(4 * time.Second)
 
 		// Convert claims directly to structure
 		u := user.User{}
-		token, err = jwt.ParseWithClaims(tokenstr, &u, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.ParseWithClaims(tokenstr, &u, func(token *jwt.Token) (interface{}, error) {
 			return key, nil
 		})
 		if err != nil {
