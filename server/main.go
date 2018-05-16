@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -19,6 +20,8 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
+
 	fs := flag.NewFlagSet("", flag.ExitOnError)
 	var (
 		addr = fs.String("grpc.addr", ":8002", "Address for gRPC server")
@@ -65,9 +68,21 @@ func authorize(ctx context.Context) error {
 		tokenstr := md["authorization"][0]
 		log.Printf("token string: %v\n", tokenstr)
 
+		bin, err := ioutil.ReadFile("rsa.pub")
+		if err != nil {
+			log.Println(err)
+			return status.Error(codes.Unauthenticated, "")
+		}
+
+		key, err := jwt.ParseRSAPublicKeyFromPEM(bin)
+		if err != nil {
+			log.Println(err)
+			return status.Error(codes.Unauthenticated, "")
+		}
+
 		// With the Parse method, claims is obtained as a map.
 		token, err := jwt.Parse(tokenstr, func(token *jwt.Token) (interface{}, error) {
-			return []byte(user.PrivateKey), nil
+			return key, nil
 		})
 		if err != nil {
 			log.Println(err)
@@ -79,7 +94,7 @@ func authorize(ctx context.Context) error {
 		// Convert claims directly to structure
 		u := user.User{}
 		token, err = jwt.ParseWithClaims(tokenstr, &u, func(token *jwt.Token) (interface{}, error) {
-			return []byte(user.PrivateKey), nil
+			return key, nil
 		})
 		if err != nil {
 			log.Println(err)

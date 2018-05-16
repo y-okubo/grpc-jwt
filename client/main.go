@@ -14,6 +14,8 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
+
 	fs := flag.NewFlagSet("", flag.ExitOnError)
 	var (
 		addr  = fs.String("grpc.addr", ":8002", "Address for gRPC server")

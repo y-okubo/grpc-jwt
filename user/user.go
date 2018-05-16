@@ -1,6 +1,7 @@
 package user
 
 import (
+	"io/ioutil"
 	"log"
 	"time"
 
@@ -34,12 +35,23 @@ func Authenticate(u, p string) *string {
 	c.Audience = "Y.O"
 	c.Subject = "AccessToken"
 
-	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), &c)
+	token := jwt.NewWithClaims(jwt.SigningMethodRS512, &c)
 
-	// Convert JSON to a string (JWT) using a secret key.
-	str, err := token.SignedString([]byte(PrivateKey))
+	bin, err := ioutil.ReadFile("rsa")
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	key, err := jwt.ParseRSAPrivateKeyFromPEM(bin)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Convert JSON to a string (JWT) using a secret key.
+	str, err := token.SignedString(key)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	return &str
 }
